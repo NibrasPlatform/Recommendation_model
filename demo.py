@@ -3,17 +3,17 @@ from inference import recommend
 from llm_explainer import explain
 
 student = {
-    "Programming":0.0,
-    "Algorithms":0,
+    "Programming":0.55,
+    "Algorithms":0.65,
     "Math":0.35,
-    "Theory":0,
+    "Theory":0.68,
     "Data":0.25,
-    "Systems":0,
-    "Hardware":0,
+    "Systems":0.45,
+    "Hardware":0.90,
     "AI":0.20,
     "UX":0,
-    "Security":0,
-    "Graphics":0,
+    "Security":0.50,
+    "Graphics":0.36,
     "Biology":0.35,
 }
 
