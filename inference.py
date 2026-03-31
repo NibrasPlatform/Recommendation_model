@@ -1,9 +1,7 @@
 # inference.py
-
 import numpy as np
 import joblib
 from sklearn.metrics.pairwise import cosine_similarity
-
 from config import CAPABILITIES, TRACK_PROFILES, profile_to_vec
 
 # =========================
@@ -19,6 +17,15 @@ track_vecs = {
     track: profile_to_vec(profile).reshape(1, -1)
     for track, profile in TRACK_PROFILES.items()
 }
+
+# =========================
+# Weighted dot product score
+# =========================
+def weighted_dot_score(student_caps, track_profile):
+    score = 0.0
+    for cap, weight in track_profile.items():
+        score += weight * student_caps.get(cap, 0.0)
+    return round(score, 4)
 
 # =========================
 # Validate input
@@ -56,24 +63,28 @@ def recommend(student_caps, top_k=3):
     student_vec = np.array(cap_values).reshape(1, -1)
 
     # -----------------------
-    # Similarity features
-    # (same order as training)
+    # Similarity + weighted dot features
     # -----------------------
     sim_values = []
+    wdp_values = []
 
-    for track in TRACK_PROFILES:
+    for track, profile in TRACK_PROFILES.items():
 
+        # Cosine similarity (direction match)
         sim = cosine_similarity(
             student_vec,
             track_vecs[track]
         )[0, 0]
-
         sim_values.append(sim)
+
+        # Weighted dot product (strength match on what the track actually needs)
+        wdp = weighted_dot_score(student_caps, profile)
+        wdp_values.append(wdp)
 
     # -----------------------
     # Final feature vector
     # -----------------------
-    x = np.array(cap_values + sim_values).reshape(1, -1)
+    x = np.array(cap_values + sim_values + wdp_values).reshape(1, -1)
 
     # -----------------------
     # Model prediction
@@ -94,7 +105,7 @@ def recommend(student_caps, top_k=3):
     top_strengths = [cap for cap, _ in sorted_caps[:3]]
 
     # -----------------------
-    # Build results
+    # Build results — include both scores for transparency
     # -----------------------
     results = []
 
@@ -107,17 +118,19 @@ def recommend(student_caps, top_k=3):
             track_vecs[track]
         )[0, 0]
 
+        wdp = weighted_dot_score(student_caps, TRACK_PROFILES[track])
+
         results.append({
 
             "track": track,
 
-            "probability": float(
-                round(probs[i] * 100, 2)
-            ),
+            "probability": float(round(probs[i] * 100, 2)),
 
-            "similarity": float(
-                round(similarity * 100, 2)
-            )
+            "similarity": float(round(similarity * 100, 2)),
+
+            # New: shows how well the student's strengths cover
+            # the specific capabilities this track prioritizes
+            "weighted_fit": float(round(wdp * 100, 2)),
 
         })
 
