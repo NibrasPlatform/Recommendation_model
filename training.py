@@ -12,7 +12,7 @@ from config import CAPABILITIES, CAPS, TARGET_COL, TRACK_PROFILES, profile_to_ve
 DATA_PATH = "students_1000_capabilities_tracks.csv"
 
 # =========================
-# Add similarity features safely
+# Add cosine similarity features
 # =========================
 def add_similarity_features(df):
     track_vecs = {t: profile_to_vec(p).reshape(1, -1) for t, p in TRACK_PROFILES.items()}
@@ -20,7 +20,6 @@ def add_similarity_features(df):
 
     for track, tvec in track_vecs.items():
         col_name = "sim_" + track.replace(" ", "_")
-        # Avoid zero vector issues
         sims = []
         for student_vec in student_matrix:
             if np.all(student_vec == 0):
@@ -32,22 +31,51 @@ def add_similarity_features(df):
     return df
 
 # =========================
+# Add weighted dot product features
+# For each track, compute:
+#   wdp = sum( track_weight[cap] * student_score[cap] )
+# =========================
+def add_weighted_dot_features(df):
+    student_matrix = df[CAPS].fillna(0).values
+    cap_index = {cap: i for i, cap in enumerate(CAPABILITIES)}
+
+    for track, profile in TRACK_PROFILES.items():
+        col_name = "wdp_" + track.replace(" ", "_")
+        scores = []
+        for student_vec in student_matrix:
+            score = sum(
+                weight * student_vec[cap_index[cap]]
+                for cap, weight in profile.items()
+            )
+            scores.append(round(score, 4))
+        df[col_name] = scores
+
+    return df
+
+# =========================
 # Training pipeline
 # =========================
 def train():
     print("Loading dataset...")
     df = pd.read_csv(DATA_PATH)
-    df = df.fillna(0)  # safety for nulls
+    df = df.fillna(0)
 
+    # -- Feature engineering --
     df = add_similarity_features(df)
+    df = add_weighted_dot_features(df)
 
     sim_cols = [c for c in df.columns if c.startswith("sim_")]
-    feature_cols = CAPS + sim_cols
+    wdp_cols = [c for c in df.columns if c.startswith("wdp_")]
+
+    feature_cols = CAPS + sim_cols + wdp_cols
 
     X = df[feature_cols]
     y = df[TARGET_COL]
 
     print(f"Number of features: {len(feature_cols)} | Dataset size: {len(df)}")
+    print(f"  Raw caps:    {len(CAPS)}")
+    print(f"  Cosine sims: {len(sim_cols)}")
+    print(f"  Weighted dot: {len(wdp_cols)}")
 
     # =========================
     # Encode target labels
@@ -110,11 +138,19 @@ def train():
     print(confusion_matrix(y_test, y_pred))
 
     # =========================
-    # Feature Importance
+    # Feature importance
     # =========================
-    feat_imp = pd.Series(best_model.feature_importances_, index=X.columns).sort_values(ascending=False)
+    feat_imp = pd.Series(
+        best_model.feature_importances_, index=feature_cols
+    ).sort_values(ascending=False)
+
     print("\nTop 10 Important Features:")
     print(feat_imp.head(10))
+
+    print("\nImportance by feature group:")
+    print(f"  Raw caps:     {feat_imp[CAPS].sum():.4f}")
+    print(f"  Cosine sims:  {feat_imp[sim_cols].sum():.4f}")
+    print(f"  Weighted dot: {feat_imp[wdp_cols].sum():.4f}")
 
     # =========================
     # Retrain on full dataset
@@ -130,7 +166,8 @@ def train():
     metrics = {
         "accuracy": float(acc),
         "macro_f1": float(macro_f1),
-        "best_params": search.best_params_
+        "best_params": search.best_params_,
+        "feature_cols": feature_cols,
     }
     joblib.dump(metrics, "training_metrics.pkl")
     print("\nModel trained & saved successfully.")
