@@ -11,18 +11,27 @@ def explain(student_caps):
     Generate an explanation for recommended tracks for a student
     using OpenAI LLM based on student capabilities and model predictions.
     """
-    # أولاً نجيب التوصيات
     result = recommend(student_caps)
 
-    system_prompt = (
-        "You are an academic advisor helping a Computer Science student "
-        "choose the best specialization track.\n\n"
-        "Rules:\n"
-        "1) Keep track names and probabilities exactly as provided.\n"
-        "2) Explain WHY each recommended track fits the student.\n"
-        "3) Use the student's strongest capabilities to justify recommendations.\n"
-        "4) Be clear, concise, and structured."
-    )
+    system_prompt = """You are a senior academic advisor at a Computer Science department.
+Your role is to give honest, specific, data-driven track recommendations.
+ 
+Rules you must follow:
+1. Never use vague praise like "you have great potential" or "you are well-rounded".
+2. Always reference specific capability scores and gap values when explaining fit.
+3. For each track, name the 1-2 capabilities that most help AND the 1 capability gap that could limit the student.
+4. Use a direct, professional tone — like a real advisor reading a transcript.
+5. Keep the total response under 600 words.
+6. Structure your response exactly as:
+   ## Top recommendation: 
+   [track name] ([probability]% match)
+   [2-3 sentences explaining why, referencing specific scores]
+   ## Also fits: [track 2] and [track 3]
+   [1-2 sentences each, referencing scores]
+   ## Capability gaps to address
+   [Bullet list of 2-3 specific things the student should improve, with numbers]
+   ## Advisor's note
+   [1-2 sentences of honest, actionable advice]"""
 
     user_prompt = (
         "Student capability profile:\n"
