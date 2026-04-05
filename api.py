@@ -79,9 +79,65 @@ def recommend_api():
             "message": str(e)
         }), 500
 
+# ---------------------------
+# Capabilities endpoint
+# ---------------------------
+@app.route("/api/recommend_caps", methods=["POST"])
+def recommend_caps_api():
+    try:
+        data = request.get_json()
+
+        # validate request
+        if not data or "capabilities" not in data:
+            return jsonify({
+                "status": "error",
+                "message": "Missing 'capabilities' field"
+            }), 400
+
+        caps = data["capabilities"]
+
+        # check empty
+        if len(caps) == 0:
+            return jsonify({
+                "status": "error",
+                "message": "Capabilities cannot be empty"
+            }), 400
+
+        # check all zeros
+        if all(v == 0 for v in caps.values()):
+            return jsonify({
+                "status": "error",
+                "message": "All capabilities are zero"
+            }), 400
+
+        # model
+        result = recommend(caps)
+
+        track_names = [rec["track"] for rec in result["recommendations"]]
+
+        response = {
+            "strengths": result["student_strengths"],
+            "recommendations": track_names
+        }
+
+        # LLM (optional)
+        if USE_LLM:
+            try:
+                explanation = explain(caps)
+                response["explanation"] = explanation
+            except:
+                response["explanation"] = "Explanation not available"
+
+        return jsonify(response)
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 # ---------------------------
 # Run server
 # ---------------------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run
