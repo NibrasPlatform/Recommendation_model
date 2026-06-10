@@ -7,3 +7,4 @@ pandas
 joblib
 openai
 flask_cors
+python-dotenv
