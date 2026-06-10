@@ -1,14 +1,9 @@
-# ─── Web framework ────────────────────────────────────────────────────────────
-flask==3.1.3
-flask-cors==6.0.5
-
-# ─── Environment & config ─────────────────────────────────────────────────────
-python-dotenv==1.2.2
-
-# ─── ML & numerics ────────────────────────────────────────────────────────────
-numpy==2.4.6
-scikit-learn==1.9.0
-joblib==1.5.3
-
-# ─── LLM (community reranking + dynamic course weights) ───────────────────────
-openai==2.41.0
+flask
+gunicorn
+scikit-learn
+xgboost
+numpy
+pandas
+joblib
+openai
+flask_cors
