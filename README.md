@@ -74,14 +74,6 @@ Each recommendation includes:
 - OpenAI API  
 
 ---
-
-## 📊 Dataset : 
-
-- Simulated dataset of student capabilities  
-- Each student represented by normalized skill values (0 → 1)  
-- Includes labeled specialization tracks  
-
----
 ## Track Profiles
  
 Each track is defined by a weighted capability profile that sums to 1.0. Example:
